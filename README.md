@@ -1,4 +1,4 @@
-agda-unique-type
-================
+Uniqueness-typing-in-Agda
+=========================
 
-Implementation of Unique type system in Agda
+Implementation of Uniqueness typing system in Agda
