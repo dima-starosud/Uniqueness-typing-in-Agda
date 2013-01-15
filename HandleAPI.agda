@@ -15,27 +15,31 @@ open import Relation.Binary.PropositionalEquality.Core renaming (sym to ≡-sym;
 
 {-
 postulate
+    _seq_ : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
     Handle : Set
-    getHandleNative : String → Handle
+    openHandleNative : String → Handle
     readHandleNative : Handle → String
     closeHandleNative : Handle → Unit
 -}
 
+_seq_ : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
+a seq b = b
+
 record Handle : Set where
     field get : String
 
-getHandleNative : String → Handle
-getHandleNative s = record {get = s}
+openHandleNative : String → Handle
+openHandleNative name = record {get = "some data"}
 
 readHandleNative : Handle → String
 readHandleNative h = Handle.get h
 
 closeHandleNative : Handle → Unit
-closeHandleNative _ = unit
+closeHandleNative h = unit
 
-getHandle : (name : String) (h : String) → Transformer! [] [(h , Unique Handle)]
-getHandle name h v nr-v []⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) where
-    w = v ∪ [(h , Unique Handle , unique (getHandleNative name))]
+openHandle : (name : String) (h : String) → Transformer! [] [(h , Unique Handle)]
+openHandle name h v nr-v []⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) where
+    w = v ∪ [(h , Unique Handle , unique (openHandleNative name))]
     p₁ : types (v ∪ [(h , Unique Handle , _)]) ≡ types v ∪ [(h , Unique Handle)]
     p₁ = t-x∪y v [(h , Unique Handle , _)]
     p₂ : types v ∪ [(h , Unique Handle)] ≡ types v ∖∖ [] ∪ [(h , Unique Handle)]
@@ -59,8 +63,8 @@ readHandle h n v nr-v h⊆v _ = w , ≋-trans p₁ (≋-trans p₂ p₃) where
     p₃ = ≡⇒≋ $ ∪-assoc (types v ∖∖ [ h ]) [(h , Unique Handle)] [(n , Pure String)]
 
 closeHandle : (h : String) → Transformer! [(h , Unique Handle)] []
-closeHandle h v nr-v h⊆v _ = w , ≡⇒≋ p where
-    u = {-force-} closeHandleNative ∘ Unique.get ∘ getBySignature ∘ h⊆v $ here refl
+closeHandle h v nr-v h⊆v _ = u seq (w , ≡⇒≋ p) where
+    u = closeHandleNative ∘ Unique.get ∘ getBySignature ∘ h⊆v $ here refl
     w = v ∖∖ [ h ]
     p : types (v ∖∖ [ h ]) ≡ types v ∖∖ [ h ] ∪ []
     p = ≡-trans (t-x∖y v [ h ]) (≡-sym $ x∪[]≡x (types v ∖∖ [ h ]))
@@ -72,12 +76,12 @@ Doesn't work without type constraint:
 I will try it later with the latest version of Agda.
 -}
 
-getHandle′ : ∀ _ h → Transformer! [] [ (h , Unique Handle) ]
-getHandle′ = getHandle
+openHandle′ : ∀ _ h → Transformer! [] [ (h , Unique Handle) ]
+openHandle′ = openHandle
 
-tr = "h" := getHandle′ "handle" ⇒⟦ refl ⟧⇒
-     "s" := readHandle "h"      ⇒⟦ refl ⟧⇒
+tr = "h" := openHandle′ "file" ⇒⟦ refl ⟧⇒
+     "s" := readHandle "h"     ⇒⟦ refl ⟧⇒
      closeHandle "h"
 
-p : extract tr ≡ "handle"
+p : extract tr ≡ "some data"
 p = refl
