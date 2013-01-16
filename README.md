@@ -1,44 +1,45 @@
-Uniqueness-typing-in-Agda
-=========================
+<pre>
+<h2>Uniqueness-typing-in-Agda</h2>
 
-The main idea behind uniqueness types is context management.<br>
-Consider next example:<br>
+The main idea behind uniqueness types is context management.
+Consider next example:
 
-h = openHandle "name" -- 'h : Handle' is added to the context<br>
-a = readData h<br>
-close h               -- 'h' is removed from the context<br>
-b = readData h        -- compiler should complain here: 'h is undefined' or something like this<br>
+h = openHandle "name" -- 'h : Handle' is added to the context
+a = readData h
+close h               -- 'h' is removed from the context
+b = readData h        -- compiler should complain here: 'h is undefined' or something like this
 
-Another more important thing is changing of the properties of the objects:<br>
+Another more important thing is changing of the properties of the objects:
 
--- ptr - pointer to int<br>
--- p-1 - proof that value 1 is in memory, pointed by ptr<br>
-ptr , p-1 = new int(1)<br>
+-- ptr - pointer to int
+-- p-1 - proof that value 1 is in memory, pointed by ptr
+ptr , p-1 = new int(1)
 
--- p-5 - proof that value 5 is in memory, pointed by ptr<br>
-p-5 = write ptr 5<br>
+-- p-5 - proof that value 5 is in memory, pointed by ptr
+p-5 = write ptr 5
 
-Without uniqueness types we would have two contradictory statements at one time,<br>
-which would lead to inconsistency.<br>
-So, when a new proof is obtained, the old one should be thrown away.<br>
-
-
-IMPLEMENTATION (Context.agda)<br>
-  Context is a polymorphic list of 3-elements-tuple (name, type, value):<br>
-  Values : ∀ ℓ → Set (Level.suc ℓ)<br>
-  Values ℓ = List (String × (Σ[ A ∶ Set ℓ ] A))<br>
-
-  Transformer is used for building functions.<br>
-  It takes values with all the necessary proofs, removes consumed objects and adds newly created.<br>
-  Transformers are piped with creating a new transformer.<br>
-
-EXAMPLES (HandleAPI.agda, RefAPI.agda)<br>
-  --TODO: show<br>
+Without uniqueness types we would have two contradictory statements at one time,
+which would lead to inconsistency.
+So, when a new proof is obtained, the old one should be thrown away.
 
 
-QUESTIONS<br>
-  --TODO: ask<br>
+IMPLEMENTATION (Context.agda)
+  Context is a polymorphic list of 3-elements-tuple (name, type, value):
+  Values : ∀ ℓ → Set (Level.suc ℓ)
+  Values ℓ = List (String × (Σ[ A ∶ Set ℓ ] A))
 
-This prototype is a proof of concept and shouldn't be used as a base for further development.<br>
-It is easier to rewrite it than to re-factor :)<br>
+  Transformer is used for building functions.
+  It takes values with all the necessary proofs, removes consumed objects and adds newly created.
+  Transformers are piped with creating a new transformer.
 
+EXAMPLES (HandleAPI.agda, RefAPI.agda)
+  --TODO: show
+
+
+QUESTIONS
+  --TODO: ask
+
+This prototype is a proof of concept and shouldn't be used as a base for further development.
+It is easier to rewrite it than to re-factor :)
+
+</pre>
