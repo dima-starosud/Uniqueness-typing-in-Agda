@@ -27,6 +27,7 @@ IMPLEMENTATION (Context.agda)
   Context is a polymorphic list of 3-elements-tuple (name, type, value):
   Values : ∀ ℓ → Set (Level.suc ℓ)
   Values ℓ = List (String × (Σ[ A ∶ Set ℓ ] A))
+  TODO: Replace Values with a wrapper and hide its constructor and getter.
 
   Transformer is used for building functions.
   It takes values with all the necessary proofs, removes consumed objects and adds newly created.

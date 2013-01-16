@@ -4,7 +4,6 @@ open import Data.Bool hiding (_≟_)
 open import Data.String hiding (_++_)
 
 open import Function
-open import Data.Nat hiding (_⊔_; zero; suc; _≟_)
 open import Data.List renaming (map to mapL)
 open import Data.List.Any renaming (map to mapA; any to anyA)
 open import Data.Product renaming (map to mapΣ)
@@ -12,7 +11,7 @@ open import Data.Unit using (⊤; Unit; unit)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Relation.Binary.Core
 open import Relation.Nullary.Core
-open import Level using (Level; Lift)
+import Level
 
 open import Relation.Binary.PropositionalEquality hiding ([_]) renaming (cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Binary.PropositionalEquality.Core renaming (sym to ≡-sym; trans to ≡-trans)
@@ -26,31 +25,24 @@ open import Relation.Binary.PropositionalEquality.Core renaming (sym to ≡-sym;
 ≡-elim′ : ∀ {a ℓ} {A : Set a} {x y : A} → (P : A → Set ℓ) → x ≡ y → P x → P y
 ≡-elim′ P = ≡-elim ∘ (≡-cong P)
 
-level : ℕ → Level
-level ℕ.zero = Level.zero
-level (ℕ.suc n) = Level.suc (level n)
-
-_+ℓ_ : ℕ → Level → Level
-_+ℓ_ ℕ.zero ℓ = ℓ
-_+ℓ_ (ℕ.suc n) ℓ = n +ℓ (Level.suc ℓ)
-
 Named : ∀ {ℓ} (A : Set ℓ) → Set ℓ
 Named A = String × A
 
-NamedType : ∀ ℓ → Set (1 +ℓ ℓ)
+NamedType : ∀ ℓ → Set (Level.suc ℓ)
 NamedType ℓ = Named (Set ℓ)
 
-NamedValue : ∀ ℓ → Set (1 +ℓ ℓ)
+NamedValue : ∀ ℓ → Set (Level.suc ℓ)
 NamedValue ℓ = Named (Σ[ A ∶ Set ℓ ] A)
 
 Names : Set
 Names = List String
 
-Types : ∀ ℓ → Set (1 +ℓ ℓ)
+Types : ∀ ℓ → Set (Level.suc ℓ)
 Types ℓ = List (NamedType ℓ)
 
-Values : ∀ ℓ → Set (1 +ℓ ℓ)
-Values ℓ = List (NamedValue ℓ)
+private
+  Values : ∀ ℓ → Set (Level.suc ℓ)
+  Values ℓ = List (NamedValue ℓ)
 
 names : ∀ {ℓ} {A : Set ℓ} → List (Named A) → Names
 names = mapL proj₁
@@ -133,7 +125,7 @@ data _≋_ {ℓ} {A : Set ℓ} : List A → List A → Set ℓ where
 NonRepetitiveNames : ∀ {ℓ} {A : Set ℓ} → List (Named A) → Set
 NonRepetitiveNames = NonRepetitive ∘ names
 
-NonRepetitiveTypes : ∀ ℓ → Set (1 +ℓ ℓ)
+NonRepetitiveTypes : ∀ ℓ → Set (Level.suc ℓ)
 NonRepetitiveTypes ℓ = Σ[ t ∶ Types ℓ ] NonRepetitiveNames t
 
 -- lemmas
@@ -775,9 +767,9 @@ s-nr!⇒nr () | no _
 
 -- /asserts
 
-Transformer : ∀ {ℓ} → NonRepetitiveTypes ℓ → NonRepetitiveTypes ℓ → Set (1 +ℓ ℓ)
+Transformer : ∀ {ℓ} → NonRepetitiveTypes ℓ → NonRepetitiveTypes ℓ → Set (Level.suc ℓ)
 Transformer {ℓ} (t-in , nr-in) (t-out , nr-out) = 
-  (v : Values ℓ) → NonRepetitiveNames v → t-in ⊆ types v → NonRepetitive (names v ∖ names t-in ∪ names t-out)→
+  (v : Values ℓ) → NonRepetitiveNames v → t-in ⊆ types v → NonRepetitive (names v ∖ names t-in ∪ names t-out) →
   Σ[ w ∶ Values ℓ ] types w ≋ types v ∖∖ names t-in ∪ t-out
 
 pipe : ∀ {ℓ} {t-in₁ t-out₁ t-in₂ t-out₂ : Types ℓ} {nr-in₁ nr-out₁ nr-in₂ nr-out₂} →
@@ -915,7 +907,7 @@ pipe {ℓ} {t-in₁} {t-out₁} {t-in₂} {t-out₂} {nr-in₁} {nr-out₁} {nr-
             p₂ : types v ∖∖ n-in ∪ types w₂ ≋ types v ∖∖ n-in ∪ t-out
             p₂ = y≋ỳ⇒x∪y≋x∪ỳ (types v ∖∖ n-in) w₂≋out
 
-Transformer! : ∀ {ℓ} (t-in : Types ℓ) (t-out : Types ℓ) {nr!-in : NonRepetitiveNames! t-in} {nr!-out : NonRepetitiveNames! t-out} → Set (1 +ℓ ℓ)
+Transformer! : ∀ {ℓ} (t-in : Types ℓ) (t-out : Types ℓ) {nr!-in : NonRepetitiveNames! t-in} {nr!-out : NonRepetitiveNames! t-out} → Set (Level.suc ℓ)
 Transformer! t-in t-out {nr!-in = nr!-in} {nr!-out} = Transformer (t-in , s-nr!⇒nr nr!-in) (t-out , s-nr!⇒nr nr!-out)
 
 infix 1 _:=_

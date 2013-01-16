@@ -15,16 +15,17 @@ open import Relation.Binary.PropositionalEquality hiding ([_]) renaming (cong to
 open import Relation.Binary.PropositionalEquality.Core renaming (sym to ≡-sym; trans to ≡-trans)
 open import Relation.Binary.PropositionalEquality.TrustMe
 
-postulate
-  _seq_ : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
+private
+  postulate
+    _seq_ : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
 
-  nativeRef : (A : Set) → Set
-  -- create new reference and initialize it with passed value
-  nativeNew-ℕ : ℕ → nativeRef ℕ
-  -- increment value in place
-  nativeInc-ℕ : nativeRef ℕ → Unit
-  nativeGet-ℕ : nativeRef ℕ → ℕ
-  nativeFree-ℕ : nativeRef ℕ → Unit
+    nativeRef : (A : Set) → Set
+    -- create new reference and initialize it with passed value
+    nativeNew-ℕ : ℕ → nativeRef ℕ
+    -- increment value in place
+    nativeInc-ℕ : nativeRef ℕ → Unit
+    nativeGet-ℕ : nativeRef ℕ → ℕ
+    nativeFree-ℕ : nativeRef ℕ → Unit
 
 data Exact {ℓ} {A : Set ℓ} : A → Set ℓ where
   exact : ∀ a → Exact a
@@ -38,17 +39,20 @@ getExact (exact a) = a
 Ref-ℕ : ℕ → Set
 Ref-ℕ a = Σ[ native ∶ nativeRef ℕ ] nativeGet-ℕ native ≡ a
 
-proofNew-ℕ : ∀ a → Ref-ℕ a
-proofNew-ℕ a = nativeNew-ℕ a , trustMe
+private
+  -- making these private to avoid further using
+  -- which may lead to inconsistency
+  proofNew-ℕ : ∀ a → Ref-ℕ a
+  proofNew-ℕ a = nativeNew-ℕ a , trustMe
 
-proofInc-ℕ : ∀ {a} → Ref-ℕ a → Ref-ℕ (suc a)
-proofInc-ℕ (r , _) = (nativeInc-ℕ r) seq (r , trustMe)
+  proofInc-ℕ : ∀ {a} → Ref-ℕ a → Ref-ℕ (suc a)
+  proofInc-ℕ (r , _) = (nativeInc-ℕ r) seq (r , trustMe)
 
-proofGet-ℕ : ∀ {a} → Ref-ℕ a → Exact a
-proofGet-ℕ (r , p) = ≡-elim′ Exact p (exact $ nativeGet-ℕ r)
+  proofGet-ℕ : ∀ {a} → Ref-ℕ a → Exact a
+  proofGet-ℕ (r , p) = ≡-elim′ Exact p (exact $ nativeGet-ℕ r)
 
-proofFree-ℕ : {a : ℕ} → Ref-ℕ a → Unit
-proofFree-ℕ (r , _) = nativeFree-ℕ r
+  proofFree-ℕ : {a : ℕ} → Ref-ℕ a → Unit
+  proofFree-ℕ (r , _) = nativeFree-ℕ r
 
 new-ℕ : ∀ a n → Transformer! [] [(n , Unique (Ref-ℕ a))]
 new-ℕ a n v nr-v []⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) where
@@ -101,7 +105,7 @@ _++ = inc-ℕ
 free = free-ℕ
 
 tr : (n : ℕ) → Transformer! [] [(_ , Pure (Exact $ suc n))]
-tr i = "r" := new i ⇒⟦ refl ⟧⇒
+tr i = "r" := new i ⇒⟦ refl ⟧⇒  -- new ℕ(i)
        "r" ++       ⇒⟦ refl ⟧⇒  -- r++
        "j" := * "r" ⇒⟦ refl ⟧⇒  -- j := *r
        free "r"
