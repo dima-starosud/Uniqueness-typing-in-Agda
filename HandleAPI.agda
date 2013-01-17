@@ -1,17 +1,9 @@
 module HandleAPI where
 
+open import Values public
 open import Context
-
-open import Function
-open import Data.String
-open import Data.List
-open import Data.List.Any
-open import Data.Product
-open import Data.Unit using (Unit; unit; ⊤)
-open import Relation.Binary.Core
-
-open import Relation.Binary.PropositionalEquality hiding ([_]) renaming (cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Relation.Binary.PropositionalEquality.Core renaming (sym to ≡-sym; trans to ≡-trans)
+open import Transformer public
+open import Data.List public using (List; []; _∷_; [_])
 
 {-
 postulate
@@ -38,7 +30,8 @@ closeHandleNative : Handle → Unit
 closeHandleNative h = unit
 
 openHandle : (name : String) (h : String) → Transformer! [] [(h , Unique Handle)]
-openHandle name h v nr-v []⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) where
+openHandle name h ctx nr-v []⊆v nr-v∪n = context w , (≡⇒≋ $ ≡-trans p₁ p₂) where
+    v = Context.get ctx
     w = v ∪ [(h , Unique Handle , unique (openHandleNative name))]
     p₁ : types (v ∪ [(h , Unique Handle , _)]) ≡ types v ∪ [(h , Unique Handle)]
     p₁ = t-x∪y v [(h , Unique Handle , _)]
@@ -47,7 +40,8 @@ openHandle name h v nr-v []⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂)
 
 readHandle : (h n : String) {h≢!n : h s-≢! n} →
     Transformer ([(h , Unique Handle)] , nr-[a]) ((h , Unique Handle) ∷ [(n , Pure String)] , (x≢y⇒x∉l⇒x∉y∷l (s-≢!⇒≢? h≢!n) λ()) ∷ nr-[a])
-readHandle h n v nr-v h⊆v _ = w , ≋-trans p₁ (≋-trans p₂ p₃) where
+readHandle h n ctx nr-v h⊆v _ = context w , ≋-trans p₁ (≋-trans p₂ p₃) where
+    v = Context.get ctx
     r : Pure String
     r = pure ∘ readHandleNative ∘ Unique.get ∘ getBySignature ∘ h⊆v $ here refl
     w = v ∪ [(n , Pure String , r)]
@@ -63,25 +57,9 @@ readHandle h n v nr-v h⊆v _ = w , ≋-trans p₁ (≋-trans p₂ p₃) where
     p₃ = ≡⇒≋ $ ∪-assoc (types v ∖∖ [ h ]) [(h , Unique Handle)] [(n , Pure String)]
 
 closeHandle : (h : String) → Transformer! [(h , Unique Handle)] []
-closeHandle h v nr-v h⊆v _ = u seq (w , ≡⇒≋ p) where
+closeHandle h ctx nr-v h⊆v _ = u seq (context w , ≡⇒≋ p) where
+    v = Context.get ctx
     u = closeHandleNative ∘ Unique.get ∘ getBySignature ∘ h⊆v $ here refl
     w = v ∖∖ [ h ]
     p : types (v ∖∖ [ h ]) ≡ types v ∖∖ [ h ] ∪ []
     p = ≡-trans (t-x∖y v [ h ]) (≡-sym $ x∪[]≡x (types v ∖∖ [ h ]))
-
-{-
-Doesn't work without type constraint:
-    "An internal error has occurred. Please report this as a bug.
-    Location of the error: src/full/Agda/TypeChecking/Substitute.hs:607"
-I will try it later with the latest version of Agda.
--}
-
-openHandle′ : ∀ _ h → Transformer! [] [ (h , Unique Handle) ]
-openHandle′ = openHandle
-
-tr = "h" := openHandle′ "file" ⇒⟦ refl ⟧⇒
-     "s" := readHandle "h"     ⇒⟦ refl ⟧⇒
-     closeHandle "h"
-
-p : extract tr ≡ "some data"
-p = refl

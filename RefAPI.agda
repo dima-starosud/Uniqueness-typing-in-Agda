@@ -1,18 +1,11 @@
 module RefAPI where
 
-open import Context
+open import Values public
+open import Context -- that should be private
+open import Transformer public
 
-open import Function
+open import Data.List public using (List; []; _∷_; [_])
 open import Data.Nat
-open import Data.String
-open import Data.List
-open import Data.List.Any
-open import Data.Product
-open import Data.Unit using (Unit; unit; ⊤)
-open import Relation.Binary.Core
-
-open import Relation.Binary.PropositionalEquality hiding ([_]) renaming (cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Relation.Binary.PropositionalEquality.Core renaming (sym to ≡-sym; trans to ≡-trans)
 open import Relation.Binary.PropositionalEquality.TrustMe
 
 private
@@ -55,7 +48,8 @@ private
   proofFree-ℕ (r , _) = nativeFree-ℕ r
 
 new-ℕ : ∀ a n → Transformer! [] [(n , Unique (Ref-ℕ a))]
-new-ℕ a n v nr-v []⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) where
+new-ℕ a n ctx nr-v []⊆v nr-v∪n = context w , (≡⇒≋ $ ≡-trans p₁ p₂) where
+    v = Context.get ctx
     w = v ∪ [(n , Unique (Ref-ℕ a) , unique (proofNew-ℕ a))]
     p₁ : types (v ∪ [(n , Unique (Ref-ℕ a) , _)]) ≡ types v ∪ [(n , Unique (Ref-ℕ a))]
     p₁ = t-x∪y v [(n , Unique (Ref-ℕ a) , _)]
@@ -63,7 +57,8 @@ new-ℕ a n v nr-v []⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) where
     p₂ = ≡-cong (λ x → x ∪ [(n , Unique (Ref-ℕ a))]) (≡-sym $ t∖[]≡t $ types v)
 
 inc-ℕ : ∀ {a} n → Transformer! [(n , Unique (Ref-ℕ a))] [(n , Unique (Ref-ℕ (suc a)))]
-inc-ℕ {a} n v nr-v n⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) where
+inc-ℕ {a} n ctx nr-v n⊆v nr-v∪n = context w , (≡⇒≋ $ ≡-trans p₁ p₂) where
+    v = Context.get ctx
     r = unique ∘ proofInc-ℕ ∘ Unique.get ∘ getBySignature ∘ n⊆v $ here refl
     w = v ∖∖ [ n ] ∪ [(n , Unique (Ref-ℕ $ suc a) , r)]
     p₁ : types (v ∖∖ [ n ] ∪ [(n , Unique (Ref-ℕ $ suc a) , r)]) ≡ types (v ∖∖ [ n ]) ∪ [(n , Unique (Ref-ℕ $ suc _))]
@@ -73,7 +68,8 @@ inc-ℕ {a} n v nr-v n⊆v nr-v∪n = w , (≡⇒≋ $ ≡-trans p₁ p₂) wher
 
 get-ℕ : (r n : String) {r≢!n : r s-≢! n} {a : ℕ} →
     Transformer ([(r , Unique (Ref-ℕ a))] , nr-[a]) ((r , Unique (Ref-ℕ a)) ∷ [(n , Pure (Exact a))] , (x≢y⇒x∉l⇒x∉y∷l (s-≢!⇒≢? r≢!n) λ()) ∷ nr-[a])
-get-ℕ r n {a = a} v nr-v h⊆v _ = w , ≋-trans p₁ (≋-trans p₂ p₃) where
+get-ℕ r n {a = a} ctx nr-v h⊆v _ = context w , ≋-trans p₁ (≋-trans p₂ p₃) where
+    v = Context.get ctx
     pr : Pure (Exact a)
     pr = pure ∘ proofGet-ℕ ∘ Unique.get ∘ getBySignature ∘ h⊆v $ here refl
     w = v ∪ [(n , Pure (Exact a) , pr)]
@@ -89,26 +85,9 @@ get-ℕ r n {a = a} v nr-v h⊆v _ = w , ≋-trans p₁ (≋-trans p₂ p₃) wh
     p₃ = ≡⇒≋ $ ∪-assoc (types v ∖∖ [ r ]) [(r , Unique (Ref-ℕ _))] [(n , Pure (Exact a))]
 
 free-ℕ : (h : String) {a : ℕ} → Transformer! [(h , Unique (Ref-ℕ a))] []
-free-ℕ h v nr-v h⊆v _ = u seq (w , ≡⇒≋ p) where
+free-ℕ h ctx nr-v h⊆v _ = u seq (context w , ≡⇒≋ p) where
+    v = Context.get ctx
     u = proofFree-ℕ ∘ Unique.get ∘ getBySignature ∘ h⊆v $ here refl
     w = v ∖∖ [ h ]
     p : types (v ∖∖ [ h ]) ≡ types v ∖∖ [ h ] ∪ []
     p = ≡-trans (t-x∖y v [ h ]) (≡-sym $ x∪[]≡x (types v ∖∖ [ h ]))
-
-new : ∀ a n → Transformer! [] [(n , Unique (Ref-ℕ a))]
-{-Here also doesn't work without type constraint.
-  Note: that type is exactly the same as of new-ℕ !!!
--}
-new = new-ℕ
-_++ = inc-ℕ
-*_ = get-ℕ
-free = free-ℕ
-
-tr : (n : ℕ) → Transformer! [] [(_ , Pure (Exact $ suc n))]
-tr i = "r" := new i ⇒⟦ refl ⟧⇒  -- new ℕ(i)
-       "r" ++       ⇒⟦ refl ⟧⇒  -- r++
-       "j" := * "r" ⇒⟦ refl ⟧⇒  -- j := *r
-       free "r"
-
-p : ∀ n → getExact (extract $ tr n) ≡ suc n
-p = ≡-exact ∘ extract ∘ tr
