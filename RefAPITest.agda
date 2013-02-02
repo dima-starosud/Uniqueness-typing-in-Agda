@@ -6,10 +6,6 @@ open import Function
 open import Data.Nat
 open import Data.Product
 
-new : ∀ a n → Transformer! [] [(n , Unique (Ref-ℕ a))]
-{-Here also doesn't work without type constraint.
-  Note: that type is exactly the same as of new-ℕ !!!
--}
 new = new-ℕ
 _++ = inc-ℕ
 *_ = get-ℕ
